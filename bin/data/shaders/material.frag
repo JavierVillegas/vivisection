@@ -1,6 +1,8 @@
 #version 150
 uniform sampler2D tex1;
 uniform float alpha;
+uniform int ADSOn;
+uniform int circleOn;
 in vec2 texCoordVarying;
 out vec4 outputColor;
 
@@ -137,9 +139,9 @@ void main()
 //
     vec3 TheLight = vec3(0,1.5,2.4);
  //   vec3 TheNormal = normalize(vec3(fromTex.g,fromTex.b,-.008));
-
+    if (ADSOn == 1){
     col = ADSModelFrag(col,TheNormal,vec3(-TheCoords.x,TheCoords.y,5.8),-TheLight+TheEye);
-
+    }
     //  float dif = clamp(0.5 + 0.5*dot( TheNormal,normalize(vec3(VinSphe,bF)-TheLight) ),0.0,1.0);
     //     col *= 1.0 + 0.2*dif*col;
     //    col += 0.3 * pow(TheNormal.z,64.0);
@@ -147,11 +149,16 @@ void main()
     // vignetting
    // col *= 1.0 - 0.1*length(TheCoords.xy);
     //col *= pow(TheCoords.x,alpha);
-    float radi = length(TheCoords - vec2(0.5));
-    if (radi < 0.45){
-       outputColor = vec4(col,1);
+    if (circleOn == 0){
+        outputColor = vec4(col,1);
     }
     else{
-    outputColor = vec4(col,40.0*(0.5-radi));
+      float radi = length(TheCoords - vec2(0.5));
+      if (radi < 0.45){
+        outputColor = vec4(col,1);
+      }
+      else{
+       outputColor = vec4(col,40.0*(0.5-radi));
+      }
     }
 }

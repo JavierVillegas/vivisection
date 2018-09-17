@@ -42,6 +42,8 @@ class ofApp : public ofBaseApp{
     // dithering function
     void Dither(cv::Mat src, cv::Mat  &dst);
     void NonLinear(cv::Mat &src);
+    void onScreen(string screenName);
+    
     float G_alpha;
     
     //matching functions
@@ -55,12 +57,16 @@ class ofApp : public ofBaseApp{
     
     //Fbos
     ofFbo theFrame;
+    ofFbo theFrameAux;
     ofFbo PorstPro;
     ofFbo fboGaussian;
     ofFbo fboGaussianDerivativeX;
     ofFbo fboGaussianDerivativeY;
     ofFbo preGaussian;
     ofFbo fboMaterial;
+    ofFbo fboMaterialAux;
+    ofFbo fboScreen1;
+    ofFbo fboScreen2;
     //shaders
     
     // metaballs shader
@@ -76,6 +82,8 @@ class ofApp : public ofBaseApp{
     
     ofShader materialShader;
     
+    // vector of strings
+    vector <string> TheScreens;
     
     
 };

@@ -12,8 +12,8 @@ const int Rh = 240;
 const int Gw = 128;
 const int Gh = 128;
 
-const int Nob=6000;
-const int Ntg=6000;
+const int Nob=5000;
+const int Ntg=5000;
 
 int TargInd[Nob];
 ofVec2f TheObjects[Nob];
@@ -43,12 +43,12 @@ cv::Mat TheDither;
 ofTexture GaussTexture;
 ofTexture GaussTextureDerivX;
 ofTexture GaussTextureDerivY;
-float var = 48;
+float var = 48;//168?
 float alpha = 0.45;
 
 ofImage fondoFinal;
 cv::Mat Transf;
-
+int TheInd = 0;
 //--------------------------------------------------------------
 void ofApp::setup(){
     vidGrabber.setVerbose(true);
@@ -58,7 +58,7 @@ void ofApp::setup(){
     
     ThDis =13.4;
     Ktar = 19.25;
-    Kdam = 2.05;
+    Kdam = 1.05;
 
     for(int i =0;i< Nob;i++){
         ofVec2f TheValue(ofRandom(Nw),
@@ -78,8 +78,10 @@ void ofApp::setup(){
    // ofLoadImage(GaussTexture, "images/gauss1.png");
    
     theFrame.allocate(Rw, Rh,GL_RGBA32F);
+    theFrameAux.allocate(Rw, Rh,GL_RGBA32F);
     PorstPro.allocate(Rw, Rh,GL_RGBA32F);
     fboMaterial.allocate(Rw, Rh,GL_RGBA32F);
+    fboMaterialAux.allocate(Rw, Rh,GL_RGBA32F);
     fboGaussian.allocate(Gw, Gh,GL_RGBA32F);
     fboGaussianDerivativeX.allocate(Gw, Gh,GL_RGBA32F);
     fboGaussianDerivativeY.allocate(Gw, Gh,GL_RGBA32F);
@@ -141,26 +143,54 @@ void ofApp::setup(){
     fboMaterial.begin();
     ofClear(255, 255, 255, 0);
     fboMaterial.end();
+    fboMaterialAux.begin();
+    ofClear(255, 255, 255, 0);
+    fboMaterialAux.end();
+    
     fondoFinal.load("images/Balsamic.jpg");
     
     // calculating perspective transformation matrix
+//
+//    cv::Point2f InPoints[4] = {
+//        cv::Point2f(Rw/2.0,0),
+//        cv::Point2f(Rw,Rh/2.0),
+//        cv::Point2f(Rw/2.0,Rh),
+//        cv::Point2f(0,Rh/2.0)
+//    };
     
-    cv::Point2f InPoints[4] = {
-        cv::Point2f(Rw/2.0,0),
-        cv::Point2f(Rw,Rh/2.0),
-        cv::Point2f(Rw/2.0,Rh),
-        cv::Point2f(0,Rh/2.0)
-    };
+//    cv::Point2f OutPoints[4] = {
+//        cv::Point2f(1102,343),
+//        cv::Point2f(1447,585),
+//        cv::Point2f(1117,859),
+//        cv::Point2f(747,591)
+//    };
     
-    cv::Point2f OutPoints[4] = {
-        cv::Point2f(1102,343),
-        cv::Point2f(1447,585),
-        cv::Point2f(1117,859),
-        cv::Point2f(747,591)
-    };
+//    Transf = cv::getPerspectiveTransform(InPoints,OutPoints);
+//    cout<<Transf<<endl;
+
+    fboScreen1.allocate(Rw, Rh,GL_RGBA);
+    fboScreen2.allocate(Rw, Rh,GL_RGBA);
     
-    Transf = cv::getPerspectiveTransform(InPoints,OutPoints);
-    cout<<Transf<<endl;
+    fboScreen1.begin();
+    ofClear(255, 255, 255, 0);
+    fboScreen1.end();
+    
+    fboScreen2.begin();
+    ofClear(255, 255, 255, 0);
+    fboScreen2.end();
+    
+    
+    TheScreens.push_back("RGB");
+    TheScreens.push_back("Gray");
+    TheScreens.push_back("Dither");
+    TheScreens.push_back("Darkest");
+    TheScreens.push_back("TimeCoher");
+    TheScreens.push_back("Gauss");
+    TheScreens.push_back("Blend");
+    TheScreens.push_back("Normals");
+    TheScreens.push_back("Palette");
+    TheScreens.push_back("ADS");
+    TheScreens.push_back("Final");
 }
 
 //--------------------------------------------------------------
@@ -230,41 +260,109 @@ void ofApp::update(){
 
 //--------------------------------------------------------------
 void ofApp::draw(){
-    ofxCvGrayscaleImage ToShow;
+//    ofxCvGrayscaleImage ToShow;
+    ofBackground(255, 255, 255);
     ofSetColor(255, 255, 255,255);
 //    colorImg.draw(0,0,Nw,Nh);
-    if (!TheDither.empty()){
-        ToShow.allocate(TheDither.cols, TheDither.rows);
-        ToShow.setFromPixels(TheDither.data,TheDither.cols, TheDither.rows);
-        ToShow.draw(0, Nh,Nw,Nh);
-    }
-   
-    theFrame.begin();
-
+//    if (!TheDither.empty()){
+//        ToShow.allocate(TheDither.cols, TheDither.rows);
+//        ToShow.setFromPixels(TheDither.data,TheDither.cols, TheDither.rows);
+//        ToShow.draw(0, Nh,Nw,Nh);
+//    }
+    if((TheScreens[TheInd].compare("Gauss")==0)||(TheScreens[TheInd].compare("Blend")==0)){
+    theFrameAux.begin();
     ofEnablePointSprites();
+    
     glEnable(GL_BLEND);
     glBlendEquation(GL_ADD);
-    glBlendFunc(GL_ONE, GL_ONE);
-      ofClear(0, 0, 0, 0);
+ //   glBlendFunc(GL_ONE, GL_ONE);
+  //  glDisable(GL_BLEND);
+    ofClear(0, 0, 0, 0);
+    metaballs.begin();
+    GaussTexture.bind();
+    metaballs.setUniform1i("TheChannel", 4);
+    metaballs.setUniform1f("scale", .9);
+    ballsVbo.draw(GL_POINTS, 0, Nob);
+    GaussTexture.unbind();
+    metaballs.end();
+    ofDisablePointSprites();
+    theFrameAux.end();
+ }
+    
+    else{
+        
+        theFrameAux.begin();
+        
+        ofEnablePointSprites();
+        
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_ADD);
+        glBlendFunc(GL_ONE, GL_ONE);
+        
+        ofClear(0, 0, 0, 0);
+        metaballs.begin();
+        GaussTexture.bind();
+        metaballs.setUniform1i("TheChannel", 1);
+        metaballs.setUniform1f("scale", 0.01);
+        ballsVbo.draw(GL_POINTS, 0, Nob);
+        GaussTexture.unbind();
+        metaballs.end();
+        
+        metaballs.begin();
+        GaussTextureDerivX.bind();
+        metaballs.setUniform1i("TheChannel", 2);
+        metaballs.setUniform1f("scale", 0.01);
+        ballsVbo.draw(GL_POINTS, 0, Nob);
+        GaussTextureDerivX.unbind();
+        metaballs.end();
+        
+        metaballs.begin();
+        GaussTextureDerivY.bind();
+        metaballs.setUniform1i("TheChannel", 3);
+        metaballs.setUniform1f("scale", 0.01);
+        ballsVbo.draw(GL_POINTS, 0, Nob);
+        GaussTextureDerivY.unbind();
+        metaballs.end();
+        
+        glDisable(GL_BLEND);
+        ofDisablePointSprites();
+        
+        theFrameAux.end();
+        }
+    
+    
+    theFrame.begin();
+
+      ofEnablePointSprites();
+
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_ADD);
+        glBlendFunc(GL_ONE, GL_ONE);
+
+        ofClear(0, 0, 0, 0);
       metaballs.begin();
       GaussTexture.bind();
       metaballs.setUniform1i("TheChannel", 1);
+      metaballs.setUniform1f("scale", 0.01);
       ballsVbo.draw(GL_POINTS, 0, Nob);
       GaussTexture.unbind();
       metaballs.end();
     
-     metaballs.begin();
-        GaussTextureDerivX.bind();
+    
+      metaballs.begin();
+        GaussTexture.bind();
         metaballs.setUniform1i("TheChannel", 2);
+       metaballs.setUniform1f("scale", 0.01);
         ballsVbo.draw(GL_POINTS, 0, Nob);
-        GaussTextureDerivX.unbind();
-     metaballs.end();
+         GaussTexture.unbind();
+         metaballs.end();
     
     metaballs.begin();
-    GaussTextureDerivY.bind();
+    GaussTexture.bind();
     metaballs.setUniform1i("TheChannel", 3);
+    metaballs.setUniform1f("scale", 0.01);
     ballsVbo.draw(GL_POINTS, 0, Nob);
-    GaussTextureDerivY.unbind();
+    GaussTexture.unbind();
     metaballs.end();
     
     glDisable(GL_BLEND);
@@ -287,16 +385,38 @@ void ofApp::draw(){
 //    PorstPro.end();
     
     
-    fboMaterial.begin();
+    fboMaterialAux.begin();
     ofClear(0, 0, 0, 255);
-    ofTexture tex2 = theFrame.getTexture();
+    ofTexture tex2 = theFrameAux.getTexture();
     materialShader.begin();
     materialShader.setUniformTexture("tex1",  tex2, 1 );
     materialShader.setUniform1f("alpha", alpha);
+    if(TheScreens[TheInd].compare("Final")==0){
+        materialShader.setUniform1i("ADSOn",1);
+        materialShader.setUniform1i("circleOn",1);
+    }
+    else{
+    materialShader.setUniform1i("ADSOn",0);
+    materialShader.setUniform1i("circleOn",0);
+    }
     ofSetColor(0, 0, 0,255);
-    theFrame.draw(0, 0, Rw, Rh);
+    theFrameAux.draw(0, 0, Rw, Rh);
+    materialShader.end();
+    fboMaterialAux.end();
+    
+    
+    fboMaterial.begin();
+    ofClear(0, 0, 0, 255);
+    materialShader.begin();
+    materialShader.setUniformTexture("tex1",  tex2, 1 );
+    materialShader.setUniform1f("alpha", alpha);
+    materialShader.setUniform1i("ADSOn",1);
+    materialShader.setUniform1i("circleOn",0);
+    ofSetColor(0, 0, 0,255);
+    theFrameAux.draw(0, 0, Rw, Rh);
     materialShader.end();
     fboMaterial.end();
+    
     
     // material render
     
@@ -310,19 +430,68 @@ void ofApp::draw(){
 
   //  theFrame.draw(Nw,0,2*320,2*240);
    // PorstPro.draw(Nw,2.2*Nh,2*320,2*240);
-    ofClear(0, 0, 0,0);
-   ofEnableAlphaBlending();
-
-    
-    
-   ofSetColor(255, 255, 255,255);
-    fondoFinal.draw(0,0,1920,1080);
-    fboMaterial.draw(746,348,712,516);
-    ofDisableAlphaBlending();
-    
-   glDisable(GL_BLEND);
+//    ofClear(0, 0, 0,0);
+//   ofEnableAlphaBlending();
+//
+//
+//
+//   ofSetColor(255, 255, 255,255);
+//    fondoFinal.draw(0,0,1920,1080);
+//    fboMaterial.draw(746,348,712,516);
+//    ofDisableAlphaBlending();
+//
+//   glDisable(GL_BLEND);
  //   fboGaussianDerivativeX.draw(0,0,256,256);
   //   fboGaussian.draw(0,256,256,256);
+    
+    // defining what will be on screen
+    
+    
+    onScreen(TheScreens[TheInd]);
+    
+    ofPushMatrix();
+    ofTranslate(500, 200);
+    ofPushMatrix();
+    ofRotate(25, 0, 1, 0);
+    if (TheInd != 1){
+    //ofNoFill();
+    //ofSetLineWidth(28.0);
+    ofSetColor(0,0,0,255);
+    ofDrawRectangle(-fboScreen1.getWidth()/2.0-6,
+                    -fboScreen1.getHeight()/2.0-6,320*3+12,240*3+12);
+    }
+    ofSetColor(255,255,255,255);
+    fboScreen1.draw(-fboScreen1.getWidth()/2.0,
+                    -fboScreen1.getHeight()/2.0,320*3,240*3);
+    ofPopMatrix();
+    ofPopMatrix();
+    
+    if (TheInd == 3){
+         ofDisableAlphaBlending();
+    }
+    else{ ofEnableAlphaBlending();}
+    
+    ofPushMatrix();
+    ofTranslate(900, 200);
+    ofPushMatrix();
+
+    ofRotate(25, 0, 1, 0);
+    if (TheInd != 0){
+        //ofNoFill();
+        //ofSetLineWidth(28.0);
+        ofSetColor(0,0,0,255);
+        ofDrawRectangle(-fboScreen1.getWidth()/2.0-6,
+                        -fboScreen1.getHeight()/2.0-6,320*3+12,240*3+12);
+    }
+    ofSetColor(255,255,255,255);
+    ofEnableAlphaBlending();
+    fboScreen2.draw(-fboScreen2.getWidth()/2.0,
+                    -fboScreen2.getHeight()/2.0,320*3,240*3);
+    ofDisableAlphaBlending();
+    ofPopMatrix();
+    ofPopMatrix();
+    
+    
 }
 
 //--------------------------------------------------------------
@@ -438,9 +607,385 @@ void ofApp::keyPressed(int key){
         if (EquaHist>2){EquaHist = 0;}
         
     }
+    
+    if (key == 'a'){
+        TheInd++;
+        cout<<TheInd<<endl;
+        
+    }
+    if (key == 'z'){
+        TheInd--;
+        cout<<TheInd<<endl;
+        
+    }
 
 }
 
+
+
+// sets the fbos to play on screen
+void ofApp::onScreen(string screenName){
+    
+    if (screenName.compare("RGB")==0){
+        
+        fboScreen1.begin();
+        ofClear(255,255,255,255);
+        ofSetColor(255, 255, 255, 255);
+        ofPushMatrix();
+        ofScale(-1,1);
+        colorImg.draw(-fboScreen1.getWidth(),0,fboScreen1.getWidth(),
+                      fboScreen1.getHeight());
+        ofPopMatrix();
+        fboScreen1.end();
+        
+        fboScreen2.begin();
+         ofClear(255,255,255,0);
+        // split to RGB
+        
+        cv::Mat bgr[3];   //destination array
+        cv::Mat tempCv = colorImg.getCvImage();
+        cv::flip(tempCv,tempCv, 1);
+        split(tempCv,bgr);
+        ofxCvGrayscaleImage ToShow;
+        if (!bgr[0].empty()){
+           ToShow.allocate(bgr[0].cols, bgr[0].rows);
+           ToShow.setFromPixels(bgr[0].data,bgr[0].cols, bgr[0].rows);
+            ofSetColor(255, 0, 0, 255);
+            ToShow.draw(0,fboScreen1.getHeight()/2.0,fboScreen1.getWidth()/2.0,
+                          fboScreen1.getHeight()/2.0);
+          }
+        if (!bgr[1].empty()){
+            ToShow.allocate(bgr[1].cols, bgr[1].rows);
+            ToShow.setFromPixels(bgr[1].data,bgr[1].cols, bgr[1].rows);
+            ofSetColor(0, 255, 0, 255);
+            ToShow.draw(fboScreen1.getWidth()/4.0,fboScreen1.getHeight()/4.0,fboScreen1.getWidth()/2.0,
+                         fboScreen1.getHeight()/2.0);
+        }
+        if (!bgr[2].empty()){
+            ToShow.allocate(bgr[2].cols, bgr[2].rows);
+            ToShow.setFromPixels(bgr[2].data,bgr[2].cols, bgr[2].rows);
+            ofSetColor(0, 0, 255, 255);
+            ToShow.draw(fboScreen1.getWidth()/2.0,0,fboScreen1.getWidth()/2.0,
+                        fboScreen1.getHeight()/2.0);
+        }
+        fboScreen2.end();
+    }
+    if (screenName.compare("Gray")==0)
+    
+    {
+       fboScreen1.begin();
+        ofClear(255,255,255,0);
+        // split to RGB
+        
+        cv::Mat bgr[3];   //destination array
+        cv::Mat tempCv = colorImg.getCvImage();
+        cv::flip(tempCv,tempCv, 1);
+        split(tempCv,bgr);
+        ofxCvGrayscaleImage ToShow;
+        if (!bgr[0].empty()){
+            ToShow.allocate(bgr[0].cols, bgr[0].rows);
+            ToShow.setFromPixels(bgr[0].data,bgr[0].cols, bgr[0].rows);
+            ofSetColor(255, 0, 0, 255);
+            ToShow.draw(0,fboScreen1.getHeight()/2.0,fboScreen1.getWidth()/2.0,
+                        fboScreen1.getHeight()/2.0);
+        }
+        if (!bgr[1].empty()){
+            ToShow.allocate(bgr[1].cols, bgr[1].rows);
+            ToShow.setFromPixels(bgr[1].data,bgr[1].cols, bgr[1].rows);
+            ofSetColor(0, 255, 0, 255);
+            ToShow.draw(fboScreen1.getWidth()/4.0,fboScreen1.getHeight()/4.0,fboScreen1.getWidth()/2.0,
+                        fboScreen1.getHeight()/2.0);
+        }
+        if (!bgr[2].empty()){
+            ToShow.allocate(bgr[2].cols, bgr[2].rows);
+            ToShow.setFromPixels(bgr[2].data,bgr[2].cols, bgr[2].rows);
+            ofSetColor(0, 0, 255, 255);
+            ToShow.draw(fboScreen1.getWidth()/2.0,0,fboScreen1.getWidth()/2.0,
+                        fboScreen1.getHeight()/2.0);
+        }
+        fboScreen1.end();
+        
+        
+        fboScreen2.begin();
+         ofClear(255,255,255,0);
+        ofSetColor(255, 255, 255, 255);
+        ofPushMatrix();
+        ofScale(-1,1);
+        grayImage.draw(-fboScreen1.getWidth(),0,fboScreen1.getWidth(),
+                      fboScreen1.getHeight());
+        ofPopMatrix();
+        fboScreen2.end();
+    }
+    if (screenName.compare("Dither")==0)
+        
+    {
+        
+        fboScreen1.begin();
+        ofClear(255,255,255,0);
+        ofSetColor(255, 255, 255, 255);
+        ofPushMatrix();
+        ofScale(-1,1);
+        grayImage.draw(-fboScreen1.getWidth(),0,fboScreen1.getWidth(),
+                       fboScreen1.getHeight());
+        ofPopMatrix();
+        fboScreen1.end();
+        
+        fboScreen2.begin();
+        ofClear(255,255,255,0);
+        ofxCvGrayscaleImage ToShow;
+        cv::Mat tempCv;
+        TheDither.copyTo(tempCv);
+        cv::flip(tempCv,tempCv, 1);
+        if (!tempCv.empty()){
+            ToShow.allocate(tempCv.cols, tempCv.rows);
+            ToShow.setFromPixels(tempCv.data,tempCv.cols, tempCv.rows);
+            ToShow.draw(0,0,fboScreen1.getWidth(),
+                        fboScreen1.getHeight());
+        }
+
+        fboScreen2.end();
+    }
+    
+    if (screenName.compare("Darkest")==0)
+        
+    {
+        
+        fboScreen1.begin();
+        ofClear(255,255,255,255);
+        ofxCvGrayscaleImage ToShow;
+        cv::Mat tempCv;
+        TheDither.copyTo(tempCv);
+        cv::flip(tempCv,tempCv, 1);
+        if (!tempCv.empty()){
+            ToShow.allocate(tempCv.cols, tempCv.rows);
+            ToShow.setFromPixels(tempCv.data,tempCv.cols, tempCv.rows);
+            ToShow.draw(0,0,fboScreen1.getWidth(),
+                        fboScreen1.getHeight());
+        }
+        
+        fboScreen1.end();
+        fboScreen2.begin();
+        ofEnableAlphaBlending();
+        ofClear(255,255,255,255);
+        ofDrawRectangle(0, 0, fboScreen1.getWidth(),
+                        fboScreen1.getHeight());
+//        if (!tempCv.empty()){
+//            ToShow.allocate(tempCv.cols, tempCv.rows);
+//            ToShow.setFromPixels(tempCv.data,tempCv.cols, tempCv.rows);
+//            ofSetColor(255,255,255,255);
+//            ToShow.draw(0,0,fboScreen1.getWidth(),
+//                        fboScreen1.getHeight());
+//            ofNoFill();
+//
+//            ofSetColor(255,255,255,255);
+//        }
+        ofSetColor(120,0,0,70);
+        for (int k = 0; k< TheTargets.size(); k++){
+            
+            ofDrawCircle(TheTargets[k].x*fboScreen1.getWidth()/(float)Nw, TheTargets[k].y*fboScreen1.getHeight()/(float)Nh, 3);
+        }
+        ofDisableAlphaBlending();
+        fboScreen2.end();
+    }
+    if(screenName.compare("TimeCoher")==0){
+        fboScreen1.begin();
+        ofEnableAlphaBlending();
+        ofClear(255,255,255,255);
+        ofDrawRectangle(0, 0, fboScreen1.getWidth(),
+                        fboScreen1.getHeight());
+        //        if (!tempCv.empty()){
+        //            ToShow.allocate(tempCv.cols, tempCv.rows);
+        //            ToShow.setFromPixels(tempCv.data,tempCv.cols, tempCv.rows);
+        //            ofSetColor(255,255,255,255);
+        //            ToShow.draw(0,0,fboScreen1.getWidth(),
+        //                        fboScreen1.getHeight());
+        //            ofNoFill();
+        //
+        //            ofSetColor(255,255,255,255);
+        //        }
+        ofSetColor(120,0,0,70);
+        for (int k = 0; k< TheTargets.size(); k++){
+            
+            ofDrawCircle(TheTargets[k].x*fboScreen1.getWidth()/(float)Nw, TheTargets[k].y*fboScreen1.getHeight()/(float)Nh, 3);
+        }
+        ofDisableAlphaBlending();
+        fboScreen1.end();
+        fboScreen2.begin();
+        ofEnableAlphaBlending();
+        ofClear(255,255,255,255);
+        ofDrawRectangle(0, 0, fboScreen1.getWidth(),
+                        fboScreen1.getHeight());
+        //        if (!tempCv.empty()){
+        //            ToShow.allocate(tempCv.cols, tempCv.rows);
+        //            ToShow.setFromPixels(tempCv.data,tempCv.cols, tempCv.rows);
+        //            ofSetColor(255,255,255,255);
+        //            ToShow.draw(0,0,fboScreen1.getWidth(),
+        //                        fboScreen1.getHeight());
+        //            ofNoFill();
+        //
+        //            ofSetColor(255,255,255,255);
+        //        }
+        ofSetColor(0,0,150,70);
+        for (int k = 0; k< Nob; k++){
+            
+            ofDrawCircle(TheObjects[k].x*fboScreen1.getWidth()/(float)Nw, TheObjects[k].y*fboScreen1.getHeight()/(float)Nh, 3);
+        }
+        ofDisableAlphaBlending();
+        fboScreen2.end();
+        
+    }
+
+    if (screenName.compare("Gauss")==0)
+        
+    {
+        
+        fboScreen1.begin();
+        ofEnableAlphaBlending();
+        ofClear(255,255,255,255);
+        ofDrawRectangle(0, 0, fboScreen1.getWidth(),
+                        fboScreen1.getHeight());
+        //        if (!tempCv.empty()){
+        //            ToShow.allocate(tempCv.cols, tempCv.rows);
+        //            ToShow.setFromPixels(tempCv.data,tempCv.cols, tempCv.rows);
+        //            ofSetColor(255,255,255,255);
+        //            ToShow.draw(0,0,fboScreen1.getWidth(),
+        //                        fboScreen1.getHeight());
+        //            ofNoFill();
+        //
+        //            ofSetColor(255,255,255,255);
+        //        }
+        ofSetColor(0,0,150,70);
+        for (int k = 0; k< Nob; k++){
+            
+            ofDrawCircle(TheObjects[k].x*fboScreen1.getWidth()/(float)Nw, TheObjects[k].y*fboScreen1.getHeight()/(float)Nh, 3);
+        }
+        ofDisableAlphaBlending();
+        fboScreen1.end();
+        
+        
+        fboScreen2.begin();
+        ofClear(255,255,255,255);
+        ofSetColor(255, 255, 255, 255);
+    
+        theFrameAux.draw(0,0,fboScreen1.getWidth(),
+                       fboScreen1.getHeight());;
+        
+        fboScreen2.end();
+    }
+    if (screenName.compare("Blend")==0)
+        
+    {
+        fboScreen1.begin();
+        ofClear(255,255,255,255);
+        ofSetColor(255, 255, 255, 255);
+        
+        theFrameAux.draw(0,0,fboScreen1.getWidth(),
+                         fboScreen1.getHeight());;
+        
+        fboScreen1.end();
+        fboScreen2.begin();
+        ofClear(255,255,255,255);
+        ofSetColor(255, 255, 255, 255);
+        
+        theFrame.draw(0,0,fboScreen1.getWidth(),
+                         fboScreen1.getHeight());;
+        
+        fboScreen2.end();
+        
+        
+    }
+
+    if (screenName.compare("Normals")==0)
+        
+    {
+        fboScreen1.begin();
+        ofClear(255,255,255,255);
+        ofSetColor(255, 255, 255, 255);
+        
+        theFrame.draw(0,0,fboScreen1.getWidth(),
+                         fboScreen1.getHeight());;
+        
+        fboScreen1.end();
+        fboScreen2.begin();
+        ofClear(255,255,255,255);
+        ofSetColor(255, 255, 255, 255);
+        
+        theFrameAux.draw(0,0,fboScreen1.getWidth(),
+                      fboScreen1.getHeight());;
+        
+        fboScreen2.end();
+    }
+
+    if (screenName.compare("Palette")==0)
+        
+    {
+        fboScreen1.begin();
+        ofClear(255,255,255,255);
+        ofSetColor(255, 255, 255, 255);
+        
+        theFrameAux.draw(0,0,fboScreen1.getWidth(),
+                         fboScreen1.getHeight());;
+        
+        fboScreen1.end();
+        
+        fboScreen2.begin();
+        ofClear(255,255,255,255);
+        ofSetColor(255, 255, 255, 255);
+        
+        fboMaterialAux.draw(0,0,fboScreen1.getWidth(),
+                      fboScreen1.getHeight());;
+        
+        fboScreen2.end();
+
+    }
+    if (screenName.compare("ADS")==0)
+        
+    {
+        fboScreen1.begin();
+        ofClear(255,255,255,255);
+        ofSetColor(255, 255, 255, 255);
+        
+        fboMaterialAux.draw(0,0,fboScreen1.getWidth(),
+                            fboScreen1.getHeight());;
+        
+        fboScreen1.end();
+        fboScreen2.begin();
+        ofClear(255,255,255,255);
+        ofSetColor(255, 255, 255, 255);
+        
+        fboMaterial.draw(0,0,fboScreen1.getWidth(),
+                            fboScreen1.getHeight());;
+        
+        fboScreen2.end();
+        
+    }
+    if (screenName.compare("Final")==0)
+        
+    {
+        fboScreen1.begin();
+        ofClear(255,255,255,255);
+        ofSetColor(255, 255, 255, 255);
+        
+        fboMaterial.draw(0,0,fboScreen1.getWidth(),
+                            fboScreen1.getHeight());;
+        
+        fboScreen1.end();
+        fboScreen2.begin();
+        ofClear(0, 0, 0,0);
+           ofEnableAlphaBlending();
+            ofSetColor(255, 255, 255,255);
+        fondoFinal.draw(0,0,fboScreen1.getWidth(),
+                        fboScreen1.getHeight());
+            fboMaterialAux.draw(746/1920.0*fboScreen1.getWidth(),348/1080.0*fboScreen1.getHeight(),712/1920.0*fboScreen1.getWidth(),516/1080.0*fboScreen1.getHeight());
+            ofDisableAlphaBlending();
+        fboScreen2.end();
+        
+    }
+    
+    
+
+
+}
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
 
@@ -494,12 +1039,14 @@ void ofApp::dragEvent(ofDragInfo dragInfo){
 void ofApp::NonLinear(cv::Mat &src) {
     int h = src.rows;
     int w = src.cols;
+    float radi;
+    radi = (TheInd < 10)?1.0:0.25;
     for (int j = 0; j < h; j++) {
         float ncj = (j/(float)h - 0.5);
         for (int i = 0; i < w; i++) {
             float nci = (i/(float)w - 0.5);
             uchar newVal;
-            if ((ncj*ncj+nci*nci)<0.25){
+            if ((ncj*ncj+nci*nci)<radi){
             newVal = (Imin +255*((Imax -Imin)/255.0*(pow((float)(src.at<uchar>(j,i)/255.0),(float)G_alpha))));
             }
             else{
