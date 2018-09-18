@@ -84,6 +84,7 @@ class ofApp : public ofBaseApp{
     
     // vector of strings
     vector <string> TheScreens;
-    
+    // fonts
+    ofTrueTypeFont Fuentes[5];
     
 };

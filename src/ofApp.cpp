@@ -191,6 +191,15 @@ void ofApp::setup(){
     TheScreens.push_back("Palette");
     TheScreens.push_back("ADS");
     TheScreens.push_back("Final");
+    
+    
+    //Fonts
+    Fuentes[0].load("helveticaBold.ttf", 34,true,true,false);
+    Fuentes[1].load("helvetica.ttf", 30,true,true,false);
+    Fuentes[2].load("helveticaBold.ttf", 20,true,true,false);
+    Fuentes[3].load("helvetica.ttf", 20,true,true,true);
+    Fuentes[4].load("helveticaBold.ttf", 40,true,true,false);
+    
 }
 
 //--------------------------------------------------------------
@@ -446,11 +455,16 @@ void ofApp::draw(){
     
     // defining what will be on screen
     
-    
+    // The title:
+    ofSetColor(0,0,0,255);
+    float theWidth = ofGetWidth();
+    float theHeight = ofGetHeight();
+    Fuentes[4].drawString("A Vivisection of Analysis/Synthesis", theWidth/14.0, theHeight/14.0);
+    ofSetColor(255,255,255,255);
     onScreen(TheScreens[TheInd]);
     
     ofPushMatrix();
-    ofTranslate(500, 200);
+    ofTranslate(400, 300);
     ofPushMatrix();
     ofRotate(25, 0, 1, 0);
     if (TheInd != 1){
@@ -472,7 +486,7 @@ void ofApp::draw(){
     else{ ofEnableAlphaBlending();}
     
     ofPushMatrix();
-    ofTranslate(900, 200);
+    ofTranslate(800, 300);
     ofPushMatrix();
 
     ofRotate(25, 0, 1, 0);
@@ -625,8 +639,22 @@ void ofApp::keyPressed(int key){
 
 // sets the fbos to play on screen
 void ofApp::onScreen(string screenName){
-    
+    float thew = ofGetWidth();
+    float theh = ofGetHeight();
     if (screenName.compare("RGB")==0){
+        
+        // subtitle
+        ofSetColor(0, 0, 0, 255);
+        Fuentes[0].drawString("Analysis", 3.2*thew/4.0, 1.2*theh/3.0);
+        Fuentes[3].drawString("1. A colored RGB Image is captured", 3*thew/4.0, 1.4*theh/3.0);
+        Fuentes[3].drawString("from the Camera",3.05*thew/4.0, 1.5*theh/3.0);
+        
+        
+        
+        ofSetColor(255, 255, 255, 255);
+        
+        
+        
         
         fboScreen1.begin();
         ofClear(255,255,255,255);
@@ -673,6 +701,17 @@ void ofApp::onScreen(string screenName){
     if (screenName.compare("Gray")==0)
     
     {
+        
+        // subtitle
+        ofSetColor(0, 0, 0, 255);
+        Fuentes[0].drawString("Analysis", 3.2*thew/4.0, 1.2*theh/3.0);
+        Fuentes[3].drawString("2. The RGB Image is converted", 3*thew/4.0, 1.4*theh/3.0);
+        Fuentes[3].drawString("to gray values",3.05*thew/4.0, 1.5*theh/3.0);
+        
+        
+        
+        ofSetColor(255, 255, 255, 255);
+        
        fboScreen1.begin();
         ofClear(255,255,255,0);
         // split to RGB
@@ -719,7 +758,13 @@ void ofApp::onScreen(string screenName){
     if (screenName.compare("Dither")==0)
         
     {
-        
+        // subtitle
+        ofSetColor(0, 0, 0, 255);
+        Fuentes[0].drawString("Analysis", 3.2*thew/4.0, 1.2*theh/3.0);
+        Fuentes[3].drawString("3. A black and white version", 3*thew/4.0, 1.4*theh/3.0);
+        Fuentes[3].drawString("is created, using density ",3.05*thew/4.0, 1.5*theh/3.0);
+        Fuentes[3].drawString("to represent darker areas",3.05*thew/4.0, 1.6*theh/3.0);
+        ofSetColor(255, 255, 255, 255);
         fboScreen1.begin();
         ofClear(255,255,255,0);
         ofSetColor(255, 255, 255, 255);
@@ -749,6 +794,13 @@ void ofApp::onScreen(string screenName){
     if (screenName.compare("Darkest")==0)
         
     {
+        // subtitle
+        ofSetColor(0, 0, 0, 255);
+        Fuentes[0].drawString("Analysis", 3.2*thew/4.0, 1.2*theh/3.0);
+        Fuentes[3].drawString("4. Points that represent", 3*thew/4.0, 1.4*theh/3.0);
+        Fuentes[3].drawString("the darkest regions are",3.05*thew/4.0, 1.5*theh/3.0);
+        Fuentes[3].drawString("selected",3.05*thew/4.0, 1.6*theh/3.0);
+        ofSetColor(255, 255, 255, 255);
         
         fboScreen1.begin();
         ofClear(255,255,255,255);
@@ -788,6 +840,14 @@ void ofApp::onScreen(string screenName){
         fboScreen2.end();
     }
     if(screenName.compare("TimeCoher")==0){
+        
+        // subtitle
+        ofSetColor(0, 0, 0, 255);
+        Fuentes[0].drawString("Synthesis", 3.2*thew/4.0, 1.2*theh/3.0);
+        Fuentes[3].drawString("1. Points in consecutive frames are", 3*thew/4.0, 1.4*theh/3.0);
+        Fuentes[3].drawString("matched and their trajectory",3.05*thew/4.0, 1.5*theh/3.0);
+        Fuentes[3].drawString("is smoothed",3.05*thew/4.0, 1.6*theh/3.0);
+        ofSetColor(255, 255, 255, 255);
         fboScreen1.begin();
         ofEnableAlphaBlending();
         ofClear(255,255,255,255);
@@ -839,6 +899,13 @@ void ofApp::onScreen(string screenName){
         
     {
         
+        // subtitle
+        ofSetColor(0, 0, 0, 255);
+        Fuentes[0].drawString("Synthesis", 3.2*thew/4.0, 1.2*theh/3.0);
+        Fuentes[3].drawString("2. Points are replaced by", 3*thew/4.0, 1.4*theh/3.0);
+        Fuentes[3].drawString("a 2D Gaussian function",3.05*thew/4.0, 1.5*theh/3.0);
+        ofSetColor(255, 255, 255, 255);
+        
         fboScreen1.begin();
         ofEnableAlphaBlending();
         ofClear(255,255,255,255);
@@ -875,6 +942,12 @@ void ofApp::onScreen(string screenName){
     if (screenName.compare("Blend")==0)
         
     {
+        // subtitle
+        ofSetColor(0, 0, 0, 255);
+        Fuentes[0].drawString("Synthesis", 3.2*thew/4.0, 1.2*theh/3.0);
+        Fuentes[3].drawString("3. All the gaussians are blended", 3*thew/4.0, 1.4*theh/3.0);
+
+        ofSetColor(255, 255, 255, 255);
         fboScreen1.begin();
         ofClear(255,255,255,255);
         ofSetColor(255, 255, 255, 255);
@@ -898,6 +971,14 @@ void ofApp::onScreen(string screenName){
     if (screenName.compare("Normals")==0)
         
     {
+        ofSetColor(0, 0, 0, 255);
+        Fuentes[0].drawString("Synthesis", 3.2*thew/4.0, 1.2*theh/3.0);
+        Fuentes[3].drawString("4. Other surfaces (in green and blue)", 3*thew/4.0, 1.4*theh/3.0);
+        Fuentes[3].drawString("are derived from the Gaussian blend",3.05*thew/4.0, 1.5*theh/3.0);
+        Fuentes[3].drawString("(in red)",3.05*thew/4.0, 1.6*theh/3.0);
+        
+        ofSetColor(255, 255, 255, 255);
+        
         fboScreen1.begin();
         ofClear(255,255,255,255);
         ofSetColor(255, 255, 255, 255);
@@ -919,6 +1000,15 @@ void ofApp::onScreen(string screenName){
     if (screenName.compare("Palette")==0)
         
     {
+        ofSetColor(0, 0, 0, 255);
+        Fuentes[0].drawString("Synthesis", 3.2*thew/4.0, 1.2*theh/3.0);
+        Fuentes[3].drawString("5. Each gray value of the", 3*thew/4.0, 1.4*theh/3.0);
+        Fuentes[3].drawString("blend, is mapped to an",3.05*thew/4.0, 1.5*theh/3.0);
+        Fuentes[3].drawString("RGB value",3.05*thew/4.0, 1.6*theh/3.0);
+        
+        ofSetColor(255, 255, 255, 255);
+        
+        
         fboScreen1.begin();
         ofClear(255,255,255,255);
         ofSetColor(255, 255, 255, 255);
@@ -941,6 +1031,12 @@ void ofApp::onScreen(string screenName){
     if (screenName.compare("ADS")==0)
         
     {
+        ofSetColor(0, 0, 0, 255);
+        Fuentes[0].drawString("Synthesis", 3.2*thew/4.0, 1.2*theh/3.0);
+        Fuentes[3].drawString("6. Light reflections are", 3*thew/4.0, 1.4*theh/3.0);
+        Fuentes[3].drawString("calculated and added",3.05*thew/4.0, 1.5*theh/3.0);
+        
+        ofSetColor(255, 255, 255, 255);
         fboScreen1.begin();
         ofClear(255,255,255,255);
         ofSetColor(255, 255, 255, 255);
@@ -962,6 +1058,12 @@ void ofApp::onScreen(string screenName){
     if (screenName.compare("Final")==0)
         
     {
+        ofSetColor(0, 0, 0, 255);
+        Fuentes[0].drawString("Synthesis", 3.2*thew/4.0, 1.2*theh/3.0);
+        Fuentes[3].drawString("7. Final image is embedded", 3*thew/4.0, 1.4*theh/3.0);
+        Fuentes[3].drawString("into a scene",3.05*thew/4.0, 1.5*theh/3.0);
+        
+        ofSetColor(255, 255, 255, 255);
         fboScreen1.begin();
         ofClear(255,255,255,255);
         ofSetColor(255, 255, 255, 255);
